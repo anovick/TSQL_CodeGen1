@@ -1,0 +1,101 @@
+USE [CodeGen_demo_1]
+GO
+SET ANSI_NULLS, QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[attribute](
+	[attribute_id] [int] IDENTITY(1,1) NOT NULL,
+	[attribute_name] [nvarchar](100) NOT NULL
+) ON [PRIMARY]
+GO
+
+SELECT * FROM dbo.attribute
+GO
+
+CREATE TABLE [dbo].[etf_destination](
+	[attribute_id] [int] NOT NULL,
+	[event_dt] [datetime] NOT NULL,
+	[event_value] [float] NOT NULL
+)  
+GO
+
+CREATE TABLE [dbo].[etf_source_A](
+	[batch_id] [int] NOT NULL,
+	[attribute_name] [nvarchar](50) NOT NULL,
+	[timestamp] [datetime] NOT NULL,
+	[value] [nvarchar](30) NULL
+)  
+GO
+
+SELECT * from dbo.etf_source_A
+GO
+
+
+CREATE   FUNCTION [dbo].[eft_lookup_attribute_id] (
+ 
+	@attribute_name nvarchar(100)
+) RETURNS INT 
+AS BEGIN
+	
+	RETURN (SELECT attribute_id 
+				FROM attribute
+				WHERE attribute_name = @attribute_name
+			)
+END 
+GO
+
+CREATE   PROC [dbo].[etf_proc_by_hand_source_A]     @batch_id INT
+
+AS
+SET NOCOUNT ON 
+declare @max_cnt int
+	,   @cnt int
+	,   @attribute_name nvarchar(50)
+	,   @attribute_id INT 
+
+	CREATE TABLE #attribute_names (cnt int not null identity(1,1)
+	        , attribute_name nvarchar(50) NOT NULL PRIMARY KEY CLUSTERED
+			, attribute_id INT NOT NULL )
+
+	INSERT INTO #attribute_names (attribute_name, attribute_id) 
+		SELECT DISTINCT attribute_name , dbo.eft_lookup_attribute_id (attribute_name)
+		    FROM dbo.etf_source_A where batch_id = @batch_id
+		
+	SELECT @max_cnt = max(cnt) from #attribute_names
+	SET @cnt = 0;
+
+	WHILE @CNT < @max_cnt BEGIN 
+		SET @cnt += 1
+
+		SELECT @attribute_name = attribute_name 
+		     , @attribute_id   = attribute_id
+			from #attribute_names where cnt = @cnt 
+
+		insert into dbo.etf_destination (attribute_id, event_dt, event_value)
+		SELECT @attribute_id
+		     , CONVERT (DATETIME, [timestamp] )
+			 , try_convert(float, [value]) 
+			FROM dbo.etf_source_A
+			WHERE TRY_CONVERT (float, [value]) IS NOT NULL
+			  and batch_id = @batch_id
+
+	END 
+GO
+
+
+
+
+
+
+CREATE TABLE [dbo].[etf_source_B](
+	[batch_id] [int] NOT NULL,
+	[attribute] [nvarchar](50) NOT NULL,
+	[when] [datetime] NOT NULL,
+	[input_value] [nvarchar](30) NULL
+)  
+GO
+
+SELECT * from etf_source_B
+go
+
+
