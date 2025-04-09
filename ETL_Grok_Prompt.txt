@@ -1,0 +1,2 @@
+In the ETL_process_AandB.txt file there is a T-SQL stored procedure named ETL_proc_by_hand_source_A that loads data from ETL_source_A into ETL_destination.  Please create a similar procedure named ETL_proc_Gen_source_B that loads data from ETL_source_B into ETL_destination.  The column names are not identical, but are similar.
+
