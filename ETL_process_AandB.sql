@@ -12,14 +12,14 @@ GO
 SELECT * FROM dbo.attribute
 GO
 
-CREATE TABLE [dbo].[etf_destination](
+CREATE TABLE [dbo].[ETL_destination](
 	[attribute_id] [int] NOT NULL,
 	[event_dt] [datetime] NOT NULL,
 	[event_value] [float] NOT NULL
 )  
 GO
 
-CREATE TABLE [dbo].[etf_source_A](
+CREATE TABLE [dbo].[ETL_source_A](
 	[batch_id] [int] NOT NULL,
 	[attribute_name] [nvarchar](50) NOT NULL,
 	[timestamp] [datetime] NOT NULL,
@@ -27,10 +27,10 @@ CREATE TABLE [dbo].[etf_source_A](
 )  
 GO
 
-SELECT * from dbo.etf_source_A
+SELECT * from dbo.ETL_source_A
 GO
 
-CREATE   FUNCTION [dbo].[eft_lookup_attribute_id] (
+CREATE OR ALTER   FUNCTION [dbo].[ETL_lookup_attribute_id] (
  
 	@attribute_name nvarchar(100)
 ) RETURNS INT 
@@ -43,8 +43,8 @@ AS BEGIN
 END 
 GO
 
-CREATE   PROC [dbo].[etf_proc_by_hand_source_A] 
-	@batch_id INT
+CREATE OR ALTER   PROC [dbo].[ETL_proc_by_hand_source_A]     @batch_id INT
+
 AS
 SET NOCOUNT ON 
 declare @max_cnt int
@@ -57,9 +57,8 @@ declare @max_cnt int
 			, attribute_id INT NOT NULL )
 
 	INSERT INTO #attribute_names (attribute_name, attribute_id) 
-		SELECT DISTINCT attribute_name 
-		              , dbo.eft_lookup_attribute_id (attribute_name)
-		    FROM dbo.etf_source_A where batch_id = @batch_id
+		SELECT DISTINCT attribute_name , dbo.ETL_lookup_attribute_id (attribute_name)
+		    FROM dbo.ETL_source_A where batch_id = @batch_id
 		
 	SELECT @max_cnt = max(cnt) from #attribute_names
 	SET @cnt = 0;
@@ -71,13 +70,13 @@ declare @max_cnt int
 		     , @attribute_id   = attribute_id
 			from #attribute_names where cnt = @cnt 
 
-		INSERT INTO dbo.etf_destination   (attribute_id, event_dt, event_value)
-			SELECT @attribute_id
-				 , CONVERT (DATETIME, [timestamp] )
-				 , try_convert(float, [value]) 
-				FROM dbo.etf_source_A
-				WHERE TRY_CONVERT (float, [value]) IS NOT NULL
-				  and batch_id = @batch_id
+		insert into dbo.ETL_destination (attribute_id, event_dt, event_value)
+		SELECT @attribute_id
+		     , CONVERT (DATETIME, [timestamp] )
+			 , try_convert(float, [value]) 
+			FROM dbo.ETL_source_A
+			WHERE TRY_CONVERT (float, [value]) IS NOT NULL
+			  and batch_id = @batch_id
 
 	END 
 GO
@@ -87,14 +86,14 @@ GO
 
 
 
-CREATE TABLE [dbo].[etf_source_B](
+CREATE TABLE [dbo].[ETL_source_B](
 	[batch_id] [int] NOT NULL,
 	[attribute] [nvarchar](50) NOT NULL,
 	[when] [datetime] NOT NULL,
 	[input_value] [nvarchar](30) NULL
 ) ON [PRIMARY]
 GO
-SELECT * from etf_source_B
+SELECT * from ETL_source_B
 go
 
 
