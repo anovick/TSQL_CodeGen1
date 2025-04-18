@@ -51,4 +51,3 @@ BEGIN
       AND batch_id = @batch_id
       AND [attribute] = @attribute
 END
-GO
